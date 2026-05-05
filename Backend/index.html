@@ -1,82 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>IDS Detection System</title>
+    <title>IDS Real-Time Dashboard</title>
+
     <style>
         body {
-            font-family: Arial;
-            background: #f4f6f8;
-            text-align: center;
-            padding: 40px;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        h1 {
-            color: #333;
+        .container {
+            background: #111827;
+            padding: 25px;
+            border-radius: 15px;
+            width: 750px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 5px;
+        }
+
+        p {
+            color: #9ca3af;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 10px;
+            width: 30%;
+            font-size: 18px;
+        }
+
+        .card.attack {
+            border-left: 5px solid red;
+        }
+
+        .card.safe {
+            border-left: 5px solid green;
         }
 
         textarea {
-            width: 80%;
+            width: 100%;
             height: 150px;
-            margin: 20px 0;
+            border-radius: 10px;
+            border: none;
             padding: 10px;
-            font-size: 14px;
+            background: #1f2937;
+            color: white;
+            margin-top: 10px;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background: #007BFF;
+            margin-top: 15px;
+            background: #22c55e;
             color: white;
+            padding: 10px 20px;
             border: none;
+            border-radius: 10px;
             cursor: pointer;
-            border-radius: 5px;
+            font-size: 16px;
         }
 
         button:hover {
-            background: #0056b3;
+            background: #16a34a;
         }
 
-        .result {
-            margin-top: 20px;
+        #result {
+            margin-top: 15px;
             font-size: 18px;
-            font-weight: bold;
         }
 
-        .attack {
-            color: red;
-        }
-
-        .normal {
-            color: green;
+        #logs {
+            background: #000;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
 
-    <h1>🚨 IDS Detection System</h1>
+<div class="container">
 
-    <p>Paste your JSON input below:</p>
+    <h2> IDS Real-Time Dashboard</h2>
+    <p>Analyze and monitor network traffic</p>
+
+    <div class="stats">
+        <div class="card">Total: <span id="total">0</span></div>
+        <div class="card attack">Attacks: <span id="attacks">0</span></div>
+        <div class="card safe">Normal: <span id="normal">0</span></div>
+    </div>
 
     <textarea id="inputData">
 {
-  "features": [21,10335473,9,15,113,188,28,0,12.55,10.50,34,0,12.53,14.54,29.12,2.32,449368.39,1167105.43,3625393,3,6665665,833208.12,1534417.75,3373482,4,10300000,738239.57,1440663.90,3625393,3,0,0,0,0,296,488,0.87,1.45,0,34,12.04,12.90,166.54,0,0,0,1,0,0,0,0,1,12.54,12.55,12.53,296,0,0,0,0,0,0,9,113,15,188,29200,227,6,32,0,0,0,0,0,0,0,0]
+  "features": [12,8456721,7,10,95,150,22,1,8.45,9.12,28,1,10.21,11.32,20.45,1.85,320145.12,845210.55,2456789,2,5123456,623145.78,1123456.44,2894567,3,8450000,523145.66,1023456.77,2456789,2,1,0,0,0,210,350,0.65,1.10,1,22,9.54,10.11,120.45,0,0,0,0,1,0,0,1,0,10.45,10.50,10.40,210,0,1,0,0,0,0,7,95,10,150,18000,180,4,20,0,0,0,0,0,0,0,0]
 }
     </textarea>
 
-    <br>
+    <button onclick="predict()">Analyze Traffic</button>
 
-    <button onclick="predict()">Predict</button>
+    <div id="result"></div>
 
-    <div class="result" id="result"></div>
+    <h3> Live Logs</h3>
+    <div id="logs"></div>
 
-    <script>
+</div>
+
+<script>
+let total = 0;
+let attacks = 0;
+let normal = 0;
+
 async function predict() {
     const input = document.getElementById("inputData").value;
     const resultDiv = document.getElementById("result");
 
     try {
-        resultDiv.innerHTML = "⏳ Connecting to server...";
+        resultDiv.innerHTML = " Analyzing...";
 
         const parsedData = JSON.parse(input);
 
@@ -88,21 +148,39 @@ async function predict() {
             body: JSON.stringify(parsedData)
         });
 
-        if (!response.ok) {
-            throw new Error("HTTP " + response.status);
-        }
-
         const data = await response.json();
 
-        resultDiv.innerHTML = `
-            ✅ Prediction: ${data.prediction} <br>
-            📊 Confidence: ${data.confidence}
-        `;
+        if (data.error) {
+            resultDiv.innerHTML = "❌ " + data.error;
+            return;
+        }
+
+        total++;
+        document.getElementById("total").innerText = total;
+
+        if (data.prediction === 1) {
+            attacks++;
+            document.getElementById("attacks").innerText = attacks;
+            resultDiv.innerHTML = " Attack Detected! <br> Confidence: " + data.confidence;
+            addLog(" Attack detected");
+        } else {
+            normal++;
+            document.getElementById("normal").innerText = normal;
+            resultDiv.innerHTML = " Normal Traffic <br> Confidence: " + data.confidence;
+            addLog(" Normal traffic");
+        }
 
     } catch (error) {
-        console.error("FULL ERROR:", error);
-        resultDiv.innerHTML = "❌ Failed: " + error.message;
+        console.error(error);
+        resultDiv.innerHTML = "Failed to connect to API";
     }
+}
+
+function addLog(message) {
+    const logs = document.getElementById("logs");
+    const time = new Date().toLocaleTimeString();
+
+    logs.innerHTML = `[${time}] ${message} <br>` + logs.innerHTML;
 }
 </script>
 
