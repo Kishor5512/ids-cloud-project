@@ -76,7 +76,7 @@ async function predict() {
     const resultDiv = document.getElementById("result");
 
     try {
-        resultDiv.innerHTML = "⏳ Waking server...";
+        resultDiv.innerHTML = "⏳ Connecting to server...";
 
         const parsedData = JSON.parse(input);
 
@@ -88,12 +88,11 @@ async function predict() {
             body: JSON.stringify(parsedData)
         });
 
-        const data = await response.json();
-
-        if (data.error) {
-            resultDiv.innerHTML = "❌ Error: " + data.error;
-            return;
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
         }
+
+        const data = await response.json();
 
         resultDiv.innerHTML = `
             ✅ Prediction: ${data.prediction} <br>
@@ -101,8 +100,8 @@ async function predict() {
         `;
 
     } catch (error) {
-        console.error(error);
-        resultDiv.innerHTML = "❌ " + error.message;
+        console.error("FULL ERROR:", error);
+        resultDiv.innerHTML = "❌ Failed: " + error.message;
     }
 }
 </script>
