@@ -1,16 +1,19 @@
 from flask import Flask, request, jsonify
-import numpy as np
+import os
 import joblib
+import numpy as np
 
 app = Flask(__name__)
 
-# Load model once
-model = joblib.load("model.pkl")
+# Load model safely
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "model.pkl")
+
+model = joblib.load(model_path)
 
 @app.route('/')
 def home():
     return "IDS API Running ✅"
-
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -20,13 +23,13 @@ def predict():
         # Validate input
         if not data or 'features' not in data:
             return jsonify({"error": "Missing 'features' in request"}), 400
-        
 
         features = data['features']
+
         if len(features) != 78:
             return jsonify({"error": "Expected 78 features"}), 400
 
-        # Ensure correct format
+        # Convert to numpy array
         features = np.array(features).reshape(1, -1)
 
         prediction = model.predict(features)[0]
@@ -42,4 +45,4 @@ def predict():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True)
